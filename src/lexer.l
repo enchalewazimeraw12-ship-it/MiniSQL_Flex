@@ -1,63 +1,62 @@
-
 %{
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+#include "ast.h"
+#include "parser.h"
 %}
 
 %option noyywrap case-insensitive
-
+%option yylineno
+%option nounput noinput
 %%
 
-[ \t\r\n]+                 ;
+[ \t\r\n]+                ;
+"--".*                    ;
+"/*"([^*]|"*"+[^*/])*"*"+"/" ;
 
-"SELECT"                   { printf("KEYWORD: SELECT\n"); }
-"FROM"                     { printf("KEYWORD: FROM\n"); }
-"WHERE"                    { printf("KEYWORD: WHERE\n"); }
-"JOIN"                     { printf("KEYWORD: JOIN\n"); }
-"INNER"                    { printf("KEYWORD: INNER\n"); }
-"LEFT"                     { printf("KEYWORD: LEFT\n"); }
-"RIGHT"                    { printf("KEYWORD: RIGHT\n"); }
-"ON"                       { printf("KEYWORD: ON\n"); }
-"AND"                      { printf("KEYWORD: AND\n"); }
-"OR"                       { printf("KEYWORD: OR\n"); }
-"NOT"                      { printf("KEYWORD: NOT\n"); }
-"AS"                       { printf("KEYWORD: AS\n"); }
-"ORDER"                    { printf("KEYWORD: ORDER\n"); }
-"BY"                       { printf("KEYWORD: BY\n"); }
-"GROUP"                    { printf("KEYWORD: GROUP\n"); }
-"HAVING"                   { printf("KEYWORD: HAVING\n"); }
-"LIMIT"                    { printf("KEYWORD: LIMIT\n"); }
-"ASC"                      { printf("KEYWORD: ASC\n"); }
-"DESC"                     { printf("KEYWORD: DESC\n"); }
+"SELECT"                  return SELECT;
+"FROM"                    return FROM;
+"WHERE"                   return WHERE;
+"JOIN"                    return JOIN;
+"INNER"                   return INNER;
+"LEFT"                    return LEFT;
+"RIGHT"                   return RIGHT;
+"ON"                      return ON;
+"AND"                     return AND;
+"OR"                      return OR;
+"NOT"                     return NOT;
+"AS"                      return AS;
+"ORDER"                   return ORDER;
+"BY"                      return BY;
+"GROUP"                   return GROUP;
+"HAVING"                  return HAVING;
+"LIMIT"                   return LIMIT;
+"ASC"                     return ASC;
+"DESC"                    return DESC;
 
-">="                       { printf("OPERATOR: >=\n"); }
-"<="                       { printf("OPERATOR: <=\n"); }
-"!="|"<>"                  { printf("OPERATOR: !=\n"); }
-"="                        { printf("OPERATOR: =\n"); }
-">"                        { printf("OPERATOR: >\n"); }
-"<"                        { printf("OPERATOR: <\n"); }
+"="                       { yylval.text = strdup(yytext); return EQ; }
+"!="|"<>"                 { yylval.text = strdup(yytext); return NE; }
+"<="                      { yylval.text = strdup(yytext); return LE; }
+">="                      { yylval.text = strdup(yytext); return GE; }
+"<"                       { yylval.text = strdup(yytext); return LT; }
+">"                       { yylval.text = strdup(yytext); return GT; }
 
-[0-9]+"."[0-9]+            { printf("DECIMAL: %s\n", yytext); }
-[0-9]+                     { printf("NUMBER: %s\n", yytext); }
+[0-9]+"."[0-9]+           { yylval.text = strdup(yytext); return FLOAT; }
+[0-9]+                    { yylval.text = strdup(yytext); return INTEGER; }
+\'([^\\\']|\\.)*\'        { yylval.text = strdup(yytext); return STRING; }
+[a-zA-Z_][a-zA-Z0-9_]*    { yylval.text = strdup(yytext); return IDENTIFIER; }
 
-\'[^'\n]*\'                { printf("STRING: %s\n", yytext); }
+","                       return COMMA;
+";"                       return SEMICOLON;
+"*"                       return STAR;
+"("                       return LPAREN;
+")"                       return RPAREN;
+"."                       return DOT;
 
-[a-zA-Z_][a-zA-Z0-9_]*     { printf("IDENTIFIER: %s\n", yytext); }
-
-","                        { printf("COMMA\n"); }
-";"                        { printf("SEMICOLON\n"); }
-"*"                        { printf("STAR\n"); }
-"("                        { printf("LEFT PARENTHESIS\n"); }
-")"                        { printf("RIGHT PARENTHESIS\n"); }
-"."                        { printf("DOT\n"); }
-
-.                          { printf("UNKNOWN: %s\n", yytext); }
+.                         {
+                              fprintf(stderr, "Lexical Error (line %d): Unexpected character '%s'\n", yylineno, yytext);
+                              return yytext[0];
+                          }
 
 %%
-
-int main(void)
-{
-    printf("===== MiniSQL Advanced Lexer =====\n");
-    yylex();
-    return 0;
-}
